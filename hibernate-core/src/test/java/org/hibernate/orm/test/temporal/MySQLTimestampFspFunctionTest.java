@@ -4,6 +4,7 @@
  */
 package org.hibernate.orm.test.temporal;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 
 import org.hibernate.dialect.MySQLDialect;
@@ -33,7 +34,7 @@ public class MySQLTimestampFspFunctionTest {
 
 	@Test
 	public void testTimeStampFunctions(SessionFactoryScope scope) {
-		// current_timestamp(), localtime(), and localtimestamp() are synonyms for now(),
+		// current_timestamp(), localtimestamp() are synonyms for now(),
 		// which returns the time at which the statement began to execute.
 		// the returned values for now(), current_timestamp(), localtime(), and
 		// localtimestamp() should be the same.
@@ -42,7 +43,7 @@ public class MySQLTimestampFspFunctionTest {
 		scope.inSession(
 				s -> {
 					Query q = s.createQuery(
-							"select now(), current_timestamp(), localtime(), localtimestamp(), sysdate()"
+							"select now(), current_timestamp(), localtimestamp(), sysdate()"
 					);
 					Object[] oArray = (Object[]) q.uniqueResult();
 					for ( Object o : oArray ) {
@@ -51,8 +52,27 @@ public class MySQLTimestampFspFunctionTest {
 					final Timestamp now = (Timestamp) oArray[0];
 					assertEquals( now, oArray[1] );
 					assertEquals( now, oArray[2] );
+					assertTrue( now.compareTo( (Timestamp) oArray[3] ) <= 0 );
+				}
+		);
+	}
+	@Test
+	public void testTimeFunctions(SessionFactoryScope scope) {
+		// the returned TIME values for now(), current_timestamp(), localtime(), and
+		// localtimestamp() should be the same.
+		// sysdate() is the time at which the function itself is executed, so the
+		// value returned for sysdate() should be different.
+		scope.inSession(
+				s -> {
+					Query q = s.createQuery(
+							"select CAST(now() AS TIME), CAST(current_timestamp() AS TIME), CAST(localtime() AS TIME), CAST(localtimestamp() AS TIME), CAST(sysdate() AS TIME)"
+					);
+					Object[] oArray = (Object[]) q.uniqueResult();
+					final Time now = (Time) oArray[0];
+					assertEquals( now, oArray[1] );
+					assertEquals( now, oArray[2] );
 					assertEquals( now, oArray[3] );
-					assertTrue( now.compareTo( (Timestamp) oArray[4] ) <= 0 );
+					assertTrue( now.compareTo( (Time) oArray[4] ) <= 0 );
 				}
 		);
 	}
