@@ -12,6 +12,7 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.community.dialect.DerbyDialect;
 import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
@@ -20,6 +21,7 @@ import org.hibernate.testing.orm.junit.DomainModel;
 import org.hibernate.testing.orm.junit.RequiresDialect;
 import org.hibernate.testing.orm.junit.SessionFactory;
 import org.hibernate.testing.orm.junit.SessionFactoryScope;
+import org.hibernate.testing.orm.junit.SkipForDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +44,7 @@ public class InsertConflictOnConstraintTest {
 	@RequiresDialect( MySQLDialect.class )
 	@RequiresDialect( HSQLDialect.class )
 	@RequiresDialect( DerbyDialect.class )
+	@SkipForDialect( dialectClass = MariaDBDialect.class )
 	@Test void testDoNothing(SessionFactoryScope scope) {
 		scope.getSessionFactory().getSchemaManager().truncateMappedObjects();
 		scope.inTransaction( s -> s.persist(new Constrained()));

@@ -21,6 +21,8 @@ import org.hibernate.engine.jdbc.env.spi.IdentifierCaseStrategy;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.exception.LockAcquisitionException;
+import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
 import org.hibernate.query.sqm.CastType;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.sql.ast.SqlAstTranslator;
@@ -37,6 +39,7 @@ import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 import org.hibernate.type.descriptor.sql.internal.DdlTypeImpl;
 import org.hibernate.type.descriptor.sql.spi.DdlTypeRegistry;
 
+import static org.hibernate.internal.util.JdbcExceptionHelper.extractErrorCode;
 import static org.hibernate.query.sqm.produce.function.FunctionParameterType.NUMERIC;
 import static org.hibernate.type.SqlTypes.GEOMETRY;
 import static org.hibernate.type.SqlTypes.OTHER;
@@ -312,5 +315,21 @@ public class MariaDBDialect extends MySQLDialect {
 	@Override
 	public String getDual() {
 		return "dual";
+	}
+
+	@Override
+	public SQLExceptionConversionDelegate buildSQLExceptionConversionDelegate() {
+		return (sqlException, message, sql) -> {
+			final int errorCode = extractErrorCode( sqlException );
+
+			return switch ( errorCode ) {
+				// If @@innodb_snapshot_isolation is set (default since 11.6.2),
+				// if an attempt to acquire a lock on a record that does not exist in the current read view is made,
+				// an error DB_RECORD_CHANGED will be raised.
+				case 1020 -> new LockAcquisitionException( message, sqlException, sql );
+				// returning null allows other delegates to operate
+				default -> null;
+			};
+		};
 	}
 }

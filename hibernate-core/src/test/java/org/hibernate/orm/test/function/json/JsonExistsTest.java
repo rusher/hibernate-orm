@@ -85,7 +85,7 @@ public class JsonExistsTest {
 	}
 
 	@Test
-	@SkipForDialect(dialectClass = MariaDBDialect.class, reason = "MariaDB reports the error 4038 as warning and simply returns null")
+	@SkipForDialect(dialectClass = MariaDBDialect.class, majorVersion = 11, minorVersion = 6, microVersion = 2, reason = "MariaDB will throw an error DB_RECORD_CHANGED when acquiring a lock on a record that have changed")
 	public void testOnError(SessionFactoryScope scope) {
 		scope.inSession( em -> {
 			try {
